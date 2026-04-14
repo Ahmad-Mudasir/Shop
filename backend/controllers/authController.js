@@ -111,3 +111,38 @@ export const getMe = catchAsyncErrors(async (req, res, next) => {
         user,
     });
 });
+
+//update password => /api/v1/password/update
+export const updatePassword = catchAsyncErrors(async (req, res, next) => {
+    const user = await User.findById(req.user.id).select("+password");
+
+    //check if current password is correct
+    const isPasswordMatched = await user.comparePassword(req.body.oldPassword);
+    if (!isPasswordMatched) {
+        return next(new ErrorHandler("Invalid current password", 400));
+    }
+
+    if (req.body.password !== req.body.confirmPassword) {
+        return next(new ErrorHandler("Password and confirm password do not match", 400));
+    }
+    user.password = req.body.password;
+    await user.save();
+    sendToken(user, 200, res);
+});
+
+//update user profile => /api/v1/me/update
+export const updateProfile = catchAsyncErrors(async (req, res, next) => {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+        return next(new ErrorHandler("User not found", 404));
+    }
+    user.name = req.body.name;
+    user.email = req.body.email;
+    await user.save();
+    res.status(200).json({
+        success: true,
+        message: "Profile updated successfully",
+        user,
+    });
+});
+
