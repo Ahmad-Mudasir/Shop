@@ -146,3 +146,53 @@ export const updateProfile = catchAsyncErrors(async (req, res, next) => {
     });
 });
 
+//Get all users => /api/v1/admin/users
+export const getAllUsers = catchAsyncErrors(async (req, res, next) => {
+    const users = await User.find();
+    res.status(200).json({
+        success: true,
+        users,
+    });
+});
+
+//Get single user => /api/v1/admin/user/:id
+export const getSingleUser = catchAsyncErrors(async (req, res, next) => {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+        return next(new ErrorHandler("User not found", 404));
+    }
+    res.status(200).json({
+        success: true,
+        user,
+    });
+});
+
+//admin update user => /api/v1/admin/user/:id
+export const updateUser = catchAsyncErrors(async (req, res, next) => {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+        return next(new ErrorHandler("User not found", 404));
+    }
+    user.name = req.body.name;
+    user.email = req.body.email;
+    user.role = req.body.role;
+    await user.save();
+    res.status(200).json({
+        success: true,
+        message: "User updated successfully",
+        user,
+    });
+});
+
+//admin delete user => /api/v1/admin/user/:id
+export const deleteUser = catchAsyncErrors(async (req, res, next) => {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+        return next(new ErrorHandler("User not found", 404));
+    }
+    await user.deleteOne();
+    res.status(200).json({
+        success: true,
+        message: "User deleted successfully",
+    });
+});

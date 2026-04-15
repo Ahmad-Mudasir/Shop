@@ -6,7 +6,15 @@ const seedProducts = async () => {
     try {
         await mongoose.connect("mongodb://127.0.0.1:27017/shop");
         await Product.deleteMany();
-        await Product.insertMany(products);
+
+        // Since you made the user field required in your Schema, 
+        // we attach a generic dummy user ObjectId to all seeded products.
+        const productWithUser = products.map((product) => ({
+            ...product,
+            user: new mongoose.Types.ObjectId()
+        }));
+
+        await Product.insertMany(productWithUser);
         console.log("Products seeded successfully");
         process.exit(0);
     } catch (error) {
