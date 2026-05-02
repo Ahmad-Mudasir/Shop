@@ -82,3 +82,66 @@ export const deleteProduct = catchAsyncErrors(async (req, res) => {
         message: "Product deleted successfully",
     })
 });
+
+//Create new review => /api/v1/review
+export const createReview = catchAsyncErrors(async (req, res, next) => {
+    const { rating, comment, productId } = req.body;
+    const review = {
+        user: req?.user?._id,
+        rating: Number(rating),
+        comment,
+    };
+    const product = await Product.findById(productId);
+    if (!product) {
+        return next(new ErrorHandler("Product not found", 404));
+    }
+    const isReviewed = product.reviews.find((review) => review.user.toString() === req.user._id.toString());
+    if (isReviewed) {
+        product.reviews.forEach((review) => {
+            if (review.user.toString() === req.user._id.toString()) {
+                review.rating = rating;
+                review.comment = comment;
+            }
+        });
+    } else {
+        product.reviews.push(review);
+        product.numOfReviews = product.reviews.length;
+    }
+    product.ratings = product.reviews.reduce((acc, item) => item.rating + acc, 0) / product.reviews.length;
+    await product.save({ validateBeforeSave: false });
+    res.status(201).json({
+        success: true,
+        message: "Review created successfully",
+        review,
+    })
+});
+
+//Get all reviews => /api/v1/reviews?id=6715829a941166731711a475
+export const getProductReviews = catchAsyncErrors(async (req, res, next) => {
+    const product = await Product.findById(req.query.id);
+    if (!product) {
+        return next(new ErrorHandler("Product not found", 404));
+    }
+    res.status(200).json({
+        success: true,
+        message: "Reviews fetched successfully",
+        reviews: product.reviews,
+    })
+});
+
+//Delete review => /api/v1/reviews?id=6715829a941166731711a475
+export const deleteReview = catchAsyncErrors(async (req, res, next) => {
+    const product = await Product.findById(req.query.id);
+    if (!product) {
+        return next(new ErrorHandler("Product not found", 404));
+    }
+    const reviews = product.reviews.filter((review) => review.user.toString() !== req.user._id.toString());
+    product.reviews = reviews;
+    product.numOfReviews = product.reviews.length;
+    product.ratings = product.reviews.length > 0 ? product.reviews.reduce((acc, item) => item.rating + acc, 0) / product.reviews.length : 0;
+    await product.save({ validateBeforeSave: false });
+    res.status(200).json({
+        success: true,
+        message: "Review deleted successfully",
+    })
+});
